@@ -90,9 +90,14 @@ def main() -> int:
         "NGINX_ENABLE_CERTBOT_CHALLENGE=false",
         "SECRET_KEY=",
     ]
+    values: dict[str, str] = {}
     for keys, generator in SECRETS:
         value = generator()
+        values.update(dict.fromkeys(keys, value))
         lines += [f"{key}={value}" for key in keys]
+    # .env.example embeds the default Redis password in this URL; without this
+    # line Celery keeps authenticating with "difyai123456" and fails.
+    lines.append(f"CELERY_BROKER_URL=redis://:{values['REDIS_PASSWORD']}@redis:6379/1")
     print("\n".join(lines))
     return 0
 
