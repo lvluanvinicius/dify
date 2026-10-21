@@ -17,7 +17,9 @@ Transformations (each one fixes something that breaks or is unsafe on Easypanel)
   become named volumes, so data never lives inside the Git checkout that
   Easypanel manages; bind mounts of tracked config files stay as they are;
 - certbot mounts are dropped: TLS terminates at Easypanel's Traefik;
-- depends_on entries pointing at dropped services are removed.
+- depends_on entries pointing at dropped services are removed;
+- nginx (and only nginx) joins the external `easypanel` network, so
+  Easypanel's Traefik can reach it while the sandboxes stay isolated.
 """
 
 from __future__ import annotations
@@ -41,6 +43,12 @@ DEFAULT_PROFILES = "postgresql,weaviate,collaboration"
 
 # Certbot and its nginx mounts only matter when nginx terminates TLS itself.
 DROPPED_MOUNT_PREFIXES = ("./volumes/certbot",)
+
+# Easypanel's Traefik reaches containers over this external network. Its own
+# override only declares it, so the public entrypoint must join it explicitly;
+# every other service stays off it (the sandboxes keep their internal networks).
+EASYPANEL_NETWORK = "easypanel"
+PUBLIC_SERVICE = "nginx"
 
 PROFILES_HEADER = re.compile(r"^# oficial \(Dify [^,]+, profiles: ([a-z0-9_,-]+)\)\.$", re.MULTILINE)
 DEFAULT_VALUE = re.compile(r"^\$\{[A-Za-z_][A-Za-z0-9_]*:?-(.+)\}$")
@@ -153,8 +161,18 @@ def build(profiles: set[str]) -> dict[str, Any]:
     }
     volumes.update({name: None for name in sorted(named)})
 
+    if PUBLIC_SERVICE not in kept:
+        raise SystemExit(f"serviço público {PUBLIC_SERVICE} não existe no compose oficial")
+    public_nets = kept[PUBLIC_SERVICE].get("networks") or ["default"]
+    if isinstance(public_nets, dict):
+        public_nets = {**public_nets, EASYPANEL_NETWORK: None}
+    else:
+        public_nets = [*public_nets, EASYPANEL_NETWORK]
+    kept[PUBLIC_SERVICE]["networks"] = public_nets
+
     used_networks = referenced_networks(kept)
     networks = {k: v for k, v in (source.get("networks") or {}).items() if k in used_networks}
+    networks[EASYPANEL_NETWORK] = {"external": True}
 
     result: dict[str, Any] = {"services": kept}
     if networks:

@@ -25,6 +25,7 @@ O `generate.py` lê o `docker/docker-compose.yaml` da tag e aplica só estas mud
 | bind mounts em `./volumes/...` guardam banco, uploads e plugins dentro do checkout Git que o Easypanel gerencia | viram volumes nomeados (`db_data`, `app_storage`, `redis_data`, `plugin_daemon`, `weaviate`, `sandbox_dependencies`) |
 | `profiles` dependem do `COMPOSE_PROFILES` do `.env` | resolvidos na geração (`postgresql,weaviate,collaboration`); os serviços de outros profiles saem do arquivo |
 | montagens do certbot | removidas; o TLS termina no Traefik do Easypanel |
+| o override que o Easypanel gera só declara a rede `easypanel`, sem ligar serviço nenhum a ela, e o Traefik responde 503 | o `nginx`, e só ele, entra na rede externa `easypanel`; os sandboxes continuam só nas redes internas |
 
 O resto fica idêntico ao oficial: imagens, variáveis, comandos, healthchecks e as
 redes `internal` que isolam o sandbox. Os arquivos de config versionados (nginx,

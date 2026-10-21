@@ -696,6 +696,9 @@ services:
     depends_on:
     - api
     - web
+    networks:
+    - default
+    - easypanel
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:1.39.2
     restart: always
@@ -726,6 +729,8 @@ networks:
   agent_sandbox_network:
     driver: bridge
     internal: true
+  easypanel:
+    external: true
 volumes:
   dify_agent_local_sandbox_home: null
   dify_agent_local_sandbox_workspace: null
