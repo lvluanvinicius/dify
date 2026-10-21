@@ -45,8 +45,9 @@ DEFAULT_PROFILES = "postgresql,weaviate,collaboration"
 DROPPED_MOUNT_PREFIXES = ("./volumes/certbot",)
 
 # Easypanel's Traefik reaches containers over this external network. Its own
-# override only declares it, so the public entrypoint must join it explicitly;
-# every other service stays off it (the sandboxes keep their internal networks).
+# override attaches only the service picked in Domains (and none while no service
+# is picked); joining here keeps nginx reachable either way, while every other
+# service stays off it (the sandboxes keep their internal networks).
 EASYPANEL_NETWORK = "easypanel"
 PUBLIC_SERVICE = "nginx"
 
